@@ -1,5 +1,9 @@
 class AccountController < ApplicationController
     skip_before_action :verifyLogin, only: [:LoginUser, :CreateUser, :existingUserName, :ResetPassword]
+    skip_before_action :verifyUserAdmin, only: [:LoginUser, :CreateUser, :existingUserName, :ResetPassword, 
+    :CreateRetweet, :AddLikesToTweet, :ResetPassword, :loadTweets, :CreateTweet, :updatePassword, :updateProfile, 
+    :viewProfile, :CreateFollowing, :Listfollowing, :unfollowing, :existingUserName, :listAllUsers]
+    
     def CreateUser
         userName = params['userName']
         if VerifyValidUserName(userName)
@@ -24,7 +28,7 @@ class AccountController < ApplicationController
         userName = params['userName']
         password = params['password']
         userNameChange = userName[0] == "@" ? userName:"@".concat(userName)
-        user = UsersRecord.where("username = :userName or useremail = :userEmail", { userName: userNameChange, userEmail: userName }).limit(1)
+        user = UsersRecord.where("(username = :userName or useremail = :userEmail) and active = :active", { userName: userNameChange, userEmail: userName, active: true }).limit(1)
         if user.count ==1 and user[0].authenticate(password)
             #generate web token
             webToken = GenerateLoginToken user[0].userid, user[0].id
@@ -39,6 +43,7 @@ class AccountController < ApplicationController
     #you become a follower to the person your are following                         #
     # the person i wamt to follow must not login but must be a valid user           #
     #################################################################################
+
     def CreateFollowing
         myFollowId = params['followingId']
         myFollowRecord = UsersRecord.find_by("userid =:userId",{userId:myFollowId})
@@ -59,7 +64,7 @@ class AccountController < ApplicationController
             render json: {status:"error", code:422, message:"User Not Exist"}, status: :unprocessable_entity
         end
     end
-    # people wey u dey follow
+    # people wey u dey follow  - 
     def Listfollowing
         following= Following.where("userid =:userId",{userId:getUserId[0]['userId']}).count
         render json: {following:following}, status: :ok
@@ -82,7 +87,7 @@ class AccountController < ApplicationController
     # - view single profile                                                         #
     # - all update on user profile                                                  #
     #################################################################################
-    def existingUserName
+    def existingUserName 
         userName = params['userName']
         userName = userName[0] == "@" ? userName:"@".concat(userName)
         user = UsersRecord.where("username like '%#{userName}%' ")
@@ -168,20 +173,22 @@ class AccountController < ApplicationController
         following= Following.where("userid =:userId",{userId:getUserId[0]['userId']})
 
         sam = following.to_a.map{|p| p.followingid}.push(getUserId[0]['userId'])
-        tweets = Tweet.where('userid IN (?)', sam).limit(recPerPage).offset(recOffset).order(id: :desc)
+        tweets = Tweet.where('userid IN (?)',sam).limit(recPerPage).offset(recOffset).order(id: :desc)
         tweets.each do |singleTweet|
-            eachTweet ={}
-            eachTweet[:tweet] = singleTweet
-            tweetAttachs = []
-            singleTweet.tweetAttachments.each do |tweetFile|
-                tweetAttachs.push(url_for(tweetFile))
+            if singleTweet.active
+                eachTweet ={}
+                eachTweet[:tweet] = singleTweet
+                tweetAttachs = []
+                singleTweet.tweetAttachments.each do |tweetFile|
+                    tweetAttachs.push(url_for(tweetFile))
+                end
+                eachTweet[:tweetAttachs] = tweetAttachs.as_json
+                eachTweet[:userFullName] = singleTweet.users_record.userfullname
+                eachTweet[:userName] = singleTweet.users_record.username
+                eachTweet[:dp] = (singleTweet.users_record.dp.attached?) ? url_for(singleTweet.users_record.dp) : ""
+                eachTweet[:likes] = singleTweet.likes.length
+                tweetAll.push(eachTweet)
             end
-            eachTweet[:tweetAttachs] = tweetAttachs.as_json
-            eachTweet[:userFullName] = singleTweet.users_record.userfullname
-            eachTweet[:userName] = singleTweet.users_record.username
-            eachTweet[:dp] = (singleTweet.users_record.dp.attached?) ? url_for(singleTweet.users_record.dp) : ""
-            eachTweet[:likes] = singleTweet.likes.length
-            tweetAll.push(eachTweet)
         end
 
         # load all retweet for the user or retweets @> ARRAY[?]::varchar[]
@@ -191,24 +198,26 @@ class AccountController < ApplicationController
                 eachTweet ={}
                 retweetInfo[0].allretweet.to_a.each do |eachTweetId|
                     tweets = Tweet.where('id =?', eachTweetId)
-                    eachTweet[:tweet] = tweets[0]
-                    tweetAttachs = []
-                    tweets[0].tweetAttachments.each do |tweetFile|
-                        tweetAttachs.push(url_for(tweetFile))
+                    if tweets[0].active
+                        eachTweet[:tweet] = tweets[0]
+                        tweetAttachs = []
+                        tweets[0].tweetAttachments.each do |tweetFile|
+                            tweetAttachs.push(url_for(tweetFile))
+                        end
+                        eachTweet[:tweetAttachs] = tweetAttachs.as_json
+                        eachTweet[:userFullName] = tweets[0].users_record.userfullname
+                        eachTweet[:userName] = tweets[0].users_record.username
+                        eachTweet[:dp] = (tweets[0].users_record.dp.attached?) ? url_for(tweets[0].users_record.dp) : ""
+                        eachTweet[:likes] = tweets[0].likes.length
+                        tweetAll.push(eachTweet)
                     end
-                    eachTweet[:tweetAttachs] = tweetAttachs.as_json
-                    eachTweet[:userFullName] = tweets[0].users_record.userfullname
-                    eachTweet[:userName] = tweets[0].users_record.username
-                    eachTweet[:dp] = (tweets[0].users_record.dp.attached?) ? url_for(tweets[0].users_record.dp) : ""
-                    eachTweet[:likes] = tweets[0].likes.length
-                    tweetAll.push(eachTweet)
                 end
             end 
         end
         
         render json: tweetAll.shuffle.as_json, status: :ok
     end
-
+    
     def ResetPassword
         userName = params['userName']
         userNameChange = userName[0] == "@" ? userName:"@".concat(userName)
@@ -231,11 +240,12 @@ class AccountController < ApplicationController
                 existingUsers.push(getUserId[0]['userId'])
                 user[0].update_attribute(:likes, existingUsers)
             end
-            render json: {updated:"Liked", totalLike:existingUsers.length, user:user[0].as_json}, status: :ok
+            render json: {updated:"Liked", totalLike:existingUsers.length,totalRetweet:user[0].retweets.length, user:user[0].as_json}, status: :ok
         else
             render json: {error:"No Tweet"}, status: :ok
         end
     end
+    
     def CreateRetweet
         existingUsers = []
         user = UsersRecord.find_by_userid(getUserId[0]['userId'])
@@ -258,10 +268,81 @@ class AccountController < ApplicationController
             render json: {updated:"Retweet", totalRetweet:existingUsers.length, tweetsid:retweet.as_json}, status: :ok
         end
     end
+
     def listAllUsers
         user = UsersRecord.all
         render json: user.as_json, status: :ok
     end
+
+    # //admin process begins
+    def AdminDeleteUser
+        userProcess = UsersRecord.find_by_userid(params['userId'])
+        userProcess.update_attribute(:active, false)
+        render json: {message:"Blocked"}, status: :ok
+    end
+
+    def AdminDeleteTweet
+        user = Tweet.where("id = ?",params[:tweetId])
+        if user.length > 0
+            user[0].update_attribute(:active, false)
+            render json: {message:"Deleted"}, status: :ok
+        else
+            render json: {error:"No Tweet"}, status: :ok
+        end
+    end
+
+    def AdminCreateUser
+        userName = params['userName']
+        if VerifyValidUserName(userName)
+            userName = userName[0] == "@" ? userName:"@".concat(userName)
+            user =  UsersRecord.new
+            user.username = userName
+            user.userfullname = params['userFullName']
+            user.useremail = params['userEmail']
+            user.password = params['password']
+            user.userid = rand(10000000...90000000)
+            if user.save
+                render json: user.as_json, status: :created
+            else
+                render json: {status:"error", code:422, message:"Unable To Create Account"}, status: :unprocessable_entity
+            end
+        else
+            render json: {status:"error", code:422, message:"Invalid User Name"}, status: :unprocessable_entity
+        end
+    end
+
+    def AdminEditUser
+        user = UsersRecord.find_by_userid(params['userId'])
+        if user
+            userPhone = !params['userPhone'].nil? ? ((params['userPhone'].present? and !params['userPhone'].empty?) ? params['userPhone'] : user.userphone) : user.userphone
+            userBio = !params['userBio'].nil? ? ((params['userBio'].present? and !params['userBio'].empty?) ? params['userBio'] : user.userbio) : user.userbio
+            userLocation = !params['userLocation'].nil? ? ((params['userLocation'].present? and !params['userLocation'].empty?) ? params['userLocation'] : user.userlocation): user.userlocation
+            userWebsite = !params['userWebsite'].nil? ? ((params['userWebsite'].present? and !params['userWebsite'].empty?)  ? params['userWebsite'] : user.userwebsite) : user.userwebsite
+            userEmail = !params['userEmail'].nil? ? ((params['userEmail'].present? and !params['userEmail'].empty?) ? params['userEmail'] : user.userEmail): user.useremail
+            userFullName = !params['userFullName'].nil? ? ((params['userFullName'].present? and !params['userFullName'].empty?) ? params['userFullName'] : user.userfullname) : user.userfullname
+            dob = !params['dob'].nil? ? ((params['dob'].present? and !params['dob'].empty?) ? params['dob'] : user.dob): user.dob
+            
+            user.update_attribute(:userphone, userPhone)
+            user.update_attribute(:userbio, userBio)
+            user.update_attribute(:userlocation, userLocation)
+            user.update_attribute(:userwebsite, userWebsite)
+            user.update_attribute(:useremail, userEmail)
+            user.update_attribute(:userfullname, userFullName)
+            user.update_attribute(:dob, dob)
+            # upload display pics
+            if params[:dp]
+                user.dp.attach(params[:dp])
+            end
+            # display cover photo
+            if params[:coverPhoto]
+                user.coverPhoto.attach(params[:coverPhoto])
+            end
+            render json: {updated:"Updated"}, status: :ok
+        else
+            render json: {status:"error", code:422, message:"Specify User Doesnot Exist"}, status: :unprocessable_entity
+        end
+    end
+
     # def UpdateResetPassword
     #     resetToken = params['resetToken']
     #     verifyPasswordResetToken(resetToken)
