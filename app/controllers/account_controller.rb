@@ -52,10 +52,11 @@ class AccountController < ApplicationController
                 following= Following.where("userid =:userId",{userId:getUserId[0]['userId']}).count
                 render json: {following:following, message:"Following"}, status: :ok
             else
-                render json: {status:"error", code:422, message:"Failed to Follow"}, status: :unprocessable_entity
+                # render json: {status:"error", code:200, message:"Failed to Follow"}, status: :unprocessable_entity
+                render json: {message:"Following"}, status: :ok
             end
         else
-            render json: {status:"error", code:422, message:"Failed to Follow"}, status: :unprocessable_entity
+            render json: {status:"error", code:422, message:"User Not Exist"}, status: :unprocessable_entity
         end
     end
     # people wey u dey follow
@@ -179,7 +180,7 @@ class AccountController < ApplicationController
             eachTweet[:userFullName] = singleTweet.users_record.userfullname
             eachTweet[:userName] = singleTweet.users_record.username
             eachTweet[:dp] = (singleTweet.users_record.dp.attached?) ? url_for(singleTweet.users_record.dp) : ""
-            eachTweet[:likes] = singleTweet.users_record.likes.length
+            eachTweet[:likes] = singleTweet.likes.length
             tweetAll.push(eachTweet)
         end
         render json: tweetAll.as_json, status: :ok
