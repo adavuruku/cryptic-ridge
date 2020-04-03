@@ -199,6 +199,7 @@ class AccountController < ApplicationController
         end
     end
     def AddLikesToTweet
+<<<<<<< HEAD
         user = Tweet.where("id = ?",params[:tweetId])
         if user.length > 0
             existingUsers = user[0].likes
@@ -210,6 +211,19 @@ class AccountController < ApplicationController
         else
             render json: {error:"No Tweet"}, status: :ok
         end
+=======
+        # user = Tweet.where("id = ? and ? = ANY (likes)",params[:tweetId], getUserId[0]['userId'])
+        # if user.length <=0
+        #     existingUsers = user.likes.to_a
+        #     existingUsers.push(getUserId[0]['userId'])
+        #     user.update_attribute(:likes, existingUsers)
+        #     render json: {updated:"Updated"}, status: :ok
+        # else
+        #     render json: {updated:"Existing"}, status: :ok
+        # end
+        user = Tweet.where("id = ?",params[:tweetId])
+        render json: user.as_json, status: :ok
+>>>>>>> 04e6db57b8c16b60b2a9be215bd56acf243d8e9d
     end
     def listAllUsers
         user = UsersRecord.all
