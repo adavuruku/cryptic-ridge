@@ -19,4 +19,5 @@ Rails.application.routes.draw do
 
   get '/allUsers', :to=> 'account#listAllUsers', as: 'allUsers'
   get '/likeTweet', :to=> 'account#AddLikesToTweet', as: 'likeTweet'
+  get '/retweet', :to=> 'account#CreateRetweet', as: 'retweet'
 end

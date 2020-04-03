@@ -208,9 +208,31 @@ class AccountController < ApplicationController
                 existingUsers.push(getUserId[0]['userId'])
                 user[0].update_attribute(:likes, existingUsers)
             end
-            render json: {updated:"Liked", totLike:existingUsers.length, user:user[0].as_json}, status: :ok
+            render json: {updated:"Liked", totalLike:existingUsers.length, user:user[0].as_json}, status: :ok
         else
             render json: {error:"No Tweet"}, status: :ok
+        end
+    end
+    def CreateRetweet
+        existingUsers = []
+        user = UsersRecord.find_by_userid(getUserId[0]['userId'])
+        retweetInfo = Retweet.where("userid = ?",getUserId[0]['userId'])
+        if retweetInfo.length > 0
+            existingUsers = retweetInfo[0].allretweet.to_a
+            if !(existingUsers.include? params[:tweetId].to_i)
+                p "eno  dey"
+                existingUsers.push(params[:tweetId])
+                retweetInfo[0].update_attribute(:allretweet, existingUsers)
+            end
+            render json: {updated:"Retweet", totalRetweet:existingUsers.length, tweetsid:retweetInfo[0].as_json}, status: :ok
+        else
+            retweet = Retweet.new
+            retweet.userid = getUserId[0]['userId']
+            existingUsers.push(params[:tweetId])
+            retweet.users_record_id = user.id
+            retweet.allretweet = existingUsers
+            retweet.save
+            render json: {updated:"Retweet", totalRetweet:existingUsers.length, tweetsid:retweet.as_json}, status: :ok
         end
     end
     def listAllUsers
