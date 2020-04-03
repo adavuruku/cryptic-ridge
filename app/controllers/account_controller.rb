@@ -169,7 +169,7 @@ class AccountController < ApplicationController
         following= Following.where("userid =:userId",{userId:getUserId[0]['userId']})
 
         sam = following.to_a.map{|p| p.followingid}.push(getUserId[0]['userId'])
-        tweets = Tweet.where('userid IN (?) or retweets @> ARRAY[?]::varchar[]', sam, sam).limit(recPerPage).offset(recOffset).order(id: :desc)
+        tweets = Tweet.where('userid IN (?)', sam).limit(recPerPage).offset(recOffset).order(id: :desc)
         tweets.each do |singleTweet|
             eachTweet ={}
             eachTweet[:tweet] = singleTweet
@@ -184,7 +184,30 @@ class AccountController < ApplicationController
             eachTweet[:likes] = singleTweet.likes.length
             tweetAll.push(eachTweet)
         end
-        render json: tweetAll.as_json, status: :ok
+
+        # load all retweet for the user or retweets @> ARRAY[?]::varchar[]
+        sam.each do |eachUser|
+            retweetInfo = Retweet.where("userid = ?",eachUser)
+            if retweetInfo.length > 0
+                eachTweet ={}
+                retweetInfo[0].allretweet.to_a.each do |eachTweetId|
+                    tweets = Tweet.where('id =?', eachTweetId)
+                    eachTweet[:tweet] = tweets[0]
+                    tweetAttachs = []
+                    tweets[0].tweetAttachments.each do |tweetFile|
+                        tweetAttachs.push(url_for(tweetFile))
+                    end
+                    eachTweet[:tweetAttachs] = tweetAttachs.as_json
+                    eachTweet[:userFullName] = tweets[0].users_record.userfullname
+                    eachTweet[:userName] = tweets[0].users_record.username
+                    eachTweet[:dp] = (tweets[0].users_record.dp.attached?) ? url_for(tweets[0].users_record.dp) : ""
+                    eachTweet[:likes] = tweets[0].likes.length
+                    tweetAll.push(eachTweet)
+                end
+            end 
+        end
+        
+        render json: tweetAll.shuffle.as_json, status: :ok
     end
 
     def ResetPassword
