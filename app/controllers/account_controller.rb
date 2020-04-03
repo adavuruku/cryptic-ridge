@@ -40,7 +40,6 @@ class AccountController < ApplicationController
     # the person i wamt to follow must not login but must be a valid user           #
     #################################################################################
     def CreateFollowing
-        p params
         myFollowId = params['followingId']
         myFollowRecord = UsersRecord.find_by("userid =:userId",{userId:myFollowId})
         if myFollowRecord
