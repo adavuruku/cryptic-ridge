@@ -53,7 +53,7 @@ class AccountController < ApplicationController
                 render json: {following:following, message:"Following"}, status: :ok
             else
                 # render json: {status:"error", code:200, message:"Failed to Follow"}, status: :unprocessable_entity
-                render json: {message:"Following"}, status: :ok
+                render json: {message:"Already Following"}, status: :ok
             end
         else
             render json: {status:"error", code:422, message:"User Not Exist"}, status: :unprocessable_entity
