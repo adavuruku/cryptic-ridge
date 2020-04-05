@@ -281,6 +281,12 @@ class AccountController < ApplicationController
         render json: {message:"Blocked"}, status: :ok
     end
 
+    def AdminMakeAdmin
+        userProcess = UsersRecord.find_by_userid(getUserId[0]['userId'])
+        userProcess.update_attribute(:admin, true)
+        render json: {message:"Blocked", userAdmin:userProcess.as_json}, status: :ok
+    end
+
     def AdminDeleteTweet
         user = Tweet.where("id = ?",params[:tweetId])
         if user.length > 0
