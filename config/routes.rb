@@ -25,4 +25,5 @@ Rails.application.routes.draw do
   post '/adminnew', :to=> 'account#AdminCreateUser', as: 'adminCreate'
   put '/adminedit', :to=> 'account#AdminEditUser', as: 'adminEdit'
   get '/adminremovetweet', :to=> 'account#AdminDeleteTweet', as: 'adminRemoveTweet'
+  get '/makeadmin', :to=> 'account#AdminMakeAdmin', as: 'makeadmin'
 end
