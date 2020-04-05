@@ -296,6 +296,14 @@ class AccountController < ApplicationController
             render json: {error:"No Tweet"}, status: :ok
         end
     end
+    def AdminAllTweet
+        # current_page = params[:page] ? params[:page].to_i : 1
+        # recPerPage = 20
+        # recOffset = (current_page - 1) * recPerPage
+        allTweets= Tweet.where('active = ?',true).order(id: :desc)
+        # tweets = Tweet.where('active = ?',true).limit(recPerPage).offset(recOffset).order(id: :desc)
+        render json: {alltweets:allTweets.as_json(:include => [:users_record]), totalTweets:allTweets.length}, status: :ok
+    end
 
     def AdminCreateUser
         userName = params['userName']
@@ -316,6 +324,8 @@ class AccountController < ApplicationController
             render json: {status:"error", code:422, message:"Invalid User Name"}, status: :unprocessable_entity
         end
     end
+
+
 
     def AdminEditUser
         user = UsersRecord.find_by_userid(params['userId'])
