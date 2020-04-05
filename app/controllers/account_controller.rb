@@ -2,7 +2,7 @@ class AccountController < ApplicationController
     skip_before_action :verifyLogin, only: [:LoginUser, :CreateUser, :existingUserName, :ResetPassword]
     skip_before_action :verifyUserAdmin, only: [:LoginUser, :CreateUser, :existingUserName, :ResetPassword, 
     :CreateRetweet, :AddLikesToTweet, :ResetPassword, :loadTweets, :CreateTweet, :updatePassword, :updateProfile, 
-    :viewProfile, :CreateFollowing, :Listfollowing, :unfollowing, :existingUserName, :listAllUsers]
+    :viewProfile, :CreateFollowing, :Listfollowing, :unfollowing, :existingUserName, :listAllUsers, :AdminMakeAdmin]
     
     def CreateUser
         userName = params['userName']
