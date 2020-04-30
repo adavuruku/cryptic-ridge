@@ -80,7 +80,18 @@ class AccountController < ApplicationController
         following= Following.where("userid =:userId",{userId:getUserId[0]['userId']}).count
         render json: {following:following, message:"unfollowed"}, status: :ok
     end
-
+    def suggestPeopleToFollow
+        suggestFollow = [getUserId[0]['userId']]
+        following= Following.where("userid =:userId",{userId:getUserId[0]['userId']})
+        if following.count > 0
+            following.each do |eachUser|
+                suggestFollow.push(eachUser.followingid)
+            end
+        end
+        usersSuggest = UsersRecord.where.not(userid: suggestFollow)
+        usrsSuggestActive = usersSuggest.select{|eachPerson| eachPerson.active == true}
+        render json: {usersSuggest:usrsSuggestActive}, status: :ok
+    end
     #################################################################################
     # Related Profile Actions                                                       #
     # - exisiting username                                                          #
@@ -113,7 +124,9 @@ class AccountController < ApplicationController
         showUser[:tweets] = Following.where("followingId =:followingId",{followingId:getUserId[0]['userId']}).count
         showUser[:tweets] = Tweet.where("userid =:userId",{userId:getUserId[0]['userId']}).count
         allRetweet = Retweet.where("userid =:userId",{userId:getUserId[0]['userId']})
-        showUser[:retweets] = allRetweet[0].allretweet.count
+        if allRetweet.count > 0
+            showUser[:retweets] = allRetweet[0].allretweet.count
+        end
         render json: showUser.as_json, status: :ok
     end
     def updateProfile
