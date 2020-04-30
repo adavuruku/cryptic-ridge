@@ -109,6 +109,11 @@ class AccountController < ApplicationController
         showUser[:coverPhoto] = (user.coverPhoto.attached?) ? url_for(user.coverPhoto) : ""
         showUser[:followings] = user.followings.count
         showUser[:followers] = Following.where("followingId =:followingId",{followingId:getUserId[0]['userId']}).count
+        showUser[:retweets] = Following.where("followingId =:followingId",{followingId:getUserId[0]['userId']}).count
+        showUser[:tweets] = Following.where("followingId =:followingId",{followingId:getUserId[0]['userId']}).count
+        showUser[:tweets] = Tweet.where("userid =:userId",{userId:getUserId[0]['userId']}).count
+        allRetweet = Retweet.where("userid =:userId",{userId:getUserId[0]['userId']})
+        showUser[:retweets] = allRetweet[0].allretweet.count
         render json: showUser.as_json, status: :ok
     end
     def updateProfile
